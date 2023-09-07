@@ -23,14 +23,15 @@ namespace ChatServer
         private async void btnStart_Click(object sender, EventArgs e)
         {
 
-                string starting = await Task.Run(() => getState("Starting ├#########┤"));
-                Task.Run(Start);
-                string started = await Task.Run(() => getState("Started . (*_*)"));
-                
+            string starting = await Task.Run(() => getState("Starting ├#########┤"));
+            string started = await Task.Run(() => getState("Started . (*_*)"));
+            Task.Run(Start);
 
-           
+
+
+
         }
-        public string  getState(string state)
+        public string getState(string state)
         {
 
             Action empty = () =>
@@ -55,10 +56,14 @@ namespace ChatServer
             //IPAddress ip= IPAddress.Parse("192.168.1.2");
             IPAddress ip = IPAddress.Parse("127.0.0.1");
             //IPAddress ip = IPAddress.Parse("localhost");
-            TcpListener tcpListener = new TcpListener(ip, 49223);
-            Thread.Sleep(3000);
+            TcpListener tcpListener = new TcpListener(ip, 49300);
+
             tcpListener.Start();
-            
+            TcpClient tcpCLient = await tcpListener.AcceptTcpClientAsync();
+            string Connected = await Task.Run(() => getState($"Connected With One Client\n--------><---------\n" +
+                $"{{Client Ip:{{{tcpCLient.Client.LocalEndPoint.AddressFamily}}}"));
         }
+
+
     }
 }
