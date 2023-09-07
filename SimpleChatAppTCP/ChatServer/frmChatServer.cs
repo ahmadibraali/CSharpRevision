@@ -20,34 +20,33 @@ namespace ChatServer
             InitializeComponent();
         }
 
-        private void btnStart_Click(object sender, EventArgs e)
+        private async void btnStart_Click(object sender, EventArgs e)
         {
-                
-                Thread.Sleep(4000);
+
+                string starting = await Task.Run(() => getState("Starting ├#########┤"));
                 Task.Run(Start);
-                var startedState = "Started . (*_*)";
-                Thread.Sleep(1500);
-                getState(startedState);
+                string started = await Task.Run(() => getState("Started . (*_*)"));
+                
+
+           
         }
-        public void getState(string state)
+        public string  getState(string state)
         {
-            
+
             Action empty = () =>
             lblCurrentState.Text = "";
             this.Invoke(empty);
-            for (int i=0;i<state.Length;i++)
+            Thread.Sleep(1500);
+            for (int i = 0; i < state.Length; i++)
             {
-                Action action = () => {
-                    
-
-                    lblCurrentState.Text += state[i];
-                };
+                Thread.Sleep(250);
+                Action action = () => lblCurrentState.Text += state[i];
                 this.Invoke(action);
-                
-
             }
-            Thread.Sleep(3000);
+            Thread.Sleep(1500);
 
+
+            return state;
         }
 
         private async void Start()
