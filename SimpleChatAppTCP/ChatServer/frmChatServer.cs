@@ -22,32 +22,35 @@ namespace ChatServer
 
         private void btnStart_Click(object sender, EventArgs e)
         {
+                
+                Thread.Sleep(4000);
+                Task.Run(Start);
+                var startedState = "Started . (*_*)";
+                Thread.Sleep(1500);
+                getState(startedState);
+        }
+        public void getState(string state)
+        {
             
-            Task.Run(() =>
+            Action empty = () =>
+            lblCurrentState.Text = "";
+            this.Invoke(empty);
+            for (int i=0;i<state.Length;i++)
             {
-                var stateRunning = "Starting......";
-                foreach (var ch in stateRunning)
-                {
-                    lblCurrentState.Text += ch;
-                    Task.Delay(200);
-                }
-            });
+                Action action = () => {
+                    
 
-            Task.Run(Start);
-            
-            Task.Run(() =>
-            {
-                var stateStarted = "Started";
-                foreach (var ch in stateStarted)
-                {
-                    lblCurrentState.Text += ch;
-                    Task.Delay(200);
-                }
-            });
+                    lblCurrentState.Text += state[i];
+                };
+                this.Invoke(action);
+                
+
+            }
+            Thread.Sleep(3000);
 
         }
 
-        private void Start()
+        private async void Start()
         {
             //IPAddress ip = new IPAddress(new byte[] {192,168,1,2 });
             //IPAddress ip= IPAddress.Parse("192.168.1.2");
