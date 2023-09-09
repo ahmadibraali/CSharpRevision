@@ -1,169 +1,238 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
+﻿using ChatServer;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+namespace ChatClient;
 
-namespace ChatClient
+
+public partial class frmChatClient : Form
 {
-    public partial class frmChatClient : Form
+    StreamReader streamReader;
+    StreamWriter streamWriter;
+
+    public frmChatClient()
     {
-        StreamReader streamReader;
-        StreamWriter streamWriter;
+        
+        
+        CopyClientList(Client.onlineUsers, UnsignedClients);
 
-        public frmChatClient()
+        InitializeComponent();
+        DisplayUsers(chkOnlineUsers, UnsignedClients);
+    }
+    private void DisplayUsers(CheckedListBox chkLst, List<string> onlineClients)
+    {
+        chkLst.Items.Clear();
+        foreach (var item in onlineClients)
         {
-            InitializeComponent();
+            chkLst.DisplayMember = "Name";
+            chkLst.Items.Add(item);
         }
-        private async Task ConnectAsync()
+    }
+
+    private void CopyClientList(List<string> clients, List<string> unsignedClients)
+    {
+        foreach (var client in clients)
         {
-            TcpClient tcpClient = new TcpClient();
-            tcpClient.Connect("127.0.0.1", 49300);
-            /// Network Stream as a channel to send or receive using it from/to client to/from server 
-            NetworkStream networkStream = tcpClient.GetStream();
-            Action action = async () =>
+            unsignedClients.Add(client);
+        }
+    }
+
+    List<string> UnsignedClients = new List<string>();
+
+    private async Task ConnectAsync(string credinitials)
+    {
+        TcpClient tcpClient = new TcpClient();
+        tcpClient.Connect("127.0.0.1", 49300);
+        /// Network Stream as a channel to send or receive using it from/to client to/from server 
+        NetworkStream networkStream = tcpClient.GetStream();
+        Action action = async () =>
+        {
+            label1.Visible = true;
+            string Connected = await Task.Run(() => getState($"Trying To loging", lblClientState));
+
+            txtMessage.Visible = true;
+            btnSendMsg.Visible = true;
+            rtfClientReceived.Visible = true;
+            lblReceived.Visible = true;
+            rtfClientReceived.Visible = true;
+        };
+        this.Invoke(action);
+
+        streamReader = new StreamReader(networkStream);
+        streamWriter = new StreamWriter(networkStream);
+        streamWriter.AutoFlush = true;
+
+        streamWriter.WriteLine(credinitials);
+
+        /// After Doing that we have to Push Message to Server Side using Flush() Method
+        //streamWriter.Flush();
+    }
+
+    private async void btnConnect_Click(object sender, EventArgs e)
+    {
+        string username = txtUserName.Text.ToLower();
+        string password = txtUserPassword.Text.ToLower();
+        string credinitials = $"###{username}#{password}###";
+
+        ConnectAsync(credinitials);
+        while (true)
+        {
+            string msg = await streamReader.ReadLineAsync();
+            if (msg.StartsWith("$$$") && msg.EndsWith("$$$"))
             {
-                label1.Visible = true;
-                string Connected = await Task.Run(() => getState($"Connected Successfully ", lblClientState));
-
-                txtMessage.Visible = true;
-                btnSendMsg.Visible = true;
-                rtfClientReceived.Visible = true;
-                lblReceived.Visible = true;
-                rtfClientReceived.Visible = true;
-            };
-            this.Invoke(action);
-            /// (BinaryReader & BinaryWriter)  Same as (StreamReader & StreamWriter)
-            //BinaryReader binaryReader = new BinaryReader(networkStream);
-            //BinaryWriter binaryWriter = new BinaryWriter(networkStream);
-            streamReader = new StreamReader(networkStream);
-            streamWriter = new StreamWriter(networkStream);
-            //// send a string to network stream using streamWriter
-            streamWriter.AutoFlush = true;
-            while (true)
-            {
-                string msg = await streamReader.ReadLineAsync();
-
-                string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfClientReceived, true));
-
-            }
-
-            /// After Doing that we have to Push Message to Server Side using Flush() Method
-            //streamWriter.Flush();
-        }
-        private async void btnConnect_Click(object sender, EventArgs e)
-        {
-            ConnectAsync();
-        }
-
-        private async void btnSendMsg_Click(object sender, EventArgs e)
-        {
-            string msg = txtMessage.Text;
-            streamWriter.WriteLine(msg);
-            string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfClientReceived, false));
-
-            txtMessage.Text = "";
-
-        }
-        public string getEnhancedState(string state, RichTextBox lbl, bool to)
-        {
-            Color colorSender = Color.FromArgb(253, 134, 70);
-            Color colorReciver = Color.FromArgb(42, 61, 68);
-            Action action;
-
-
-            if (to)
-            {
-
-                action = () =>
+                if (msg == "$$$Login Successfully$$$")
                 {
-                    lbl.SelectionColor = colorSender;
-                    lbl.SelectedText = Environment.NewLine + $"├Server :-->";
-                };
-                this.Invoke(action);
-                goto stage;
+
+                    string Connected = await Task.Run(() => getState($"Login Approved\n├------(Hello ,{username.ToUpper()})------┤", lblClientState));
+
+
+                    txtUserName.Visible = false;
+                    txtUserName.Enabled = false;
+                    txtUserPassword.Visible = false;
+                    btnConnect.Visible = false;
+                    btnDisconnect.Visible = true;
+                    chkOnlineUsers.Visible = true;
+                    lblOnlineClients.Visible = true;
+
+
+                    sendMsgtoServer($"#ONLINE#{username.ToUpper()}#ONLINE#");
+
+                }
+                else if (msg == "$$$Try Again$$$")
+                {
+                    lblClientState.Text = "Invalid Credinitials >> Try Again";
+
+                    txtUserName.Focus();
+                }
+                else if (msg.StartsWith($"#ONLINE#"))
+                {
+
+                    Client.onlineUsers.Add(msg[8..]);
+                    DisplayUsers(chkOnlineUsers, Client.onlineUsers);
+
+
+                }
+
 
             }
             else
             {
-                action = () =>
-                {
-                    //lbl.TextAlign=ContentAlignment.TopRight;
-                    lbl.SelectionColor = colorReciver;
-                    lbl.SelectedText = Environment.NewLine + $"├Client :--> ";
-                };
-                this.Invoke(action);
-
+                string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfClientReceived, true));
             }
-        stage:
-            Thread.Sleep(750);
-            for (int i = 0; i < state.Length; i++)
+
+
+
+
+
+
+        }
+    }
+
+    private async void sendMsgtoServer(string msg)
+    {
+        streamWriter.WriteLine(msg);
+    }
+
+    private async void btnSendMsg_Click(object sender, EventArgs e)
+    {
+        string msg = txtMessage.Text;
+        sendMsgtoServer(msg);
+        string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfClientReceived, false));
+
+        txtMessage.Text = "";
+
+    }
+    public string getEnhancedState(string state, RichTextBox lbl, bool to)
+    {
+        Color colorSender = Color.FromArgb(253, 134, 70);
+        Color colorReciver = Color.FromArgb(42, 61, 68);
+        Action action;
+
+
+        if (to)
+        {
+
+            action = () =>
             {
-                Thread.Sleep(100);
-                //string old = state[i]+"\n"; 
+                lbl.SelectionColor = colorSender;
+                lbl.SelectedText = Environment.NewLine + $"├Server :-->";
+            };
+            this.Invoke(action);
+            goto stage;
 
-                action = () =>
-                {
-                    //lbl.SelectionColor = colorSender;
-
-                    lbl.SelectedText += $"{state[i]}";
-                };
-                this.Invoke(action);
-            }
-            action = () => lbl.SelectedText += $"\n";
+        }
+        else
+        {
+            action = () =>
+            {
+                //lbl.TextAlign=ContentAlignment.TopRight;
+                lbl.SelectionColor = colorReciver;
+                lbl.SelectedText = Environment.NewLine + $"├Client :--> ";
+            };
             this.Invoke(action);
 
-
-            Thread.Sleep(1000);
-
-
-            return state;
         }
-        public string getState(string state, Label lbl)
+    stage:
+        Thread.Sleep(750);
+        for (int i = 0; i < state.Length; i++)
         {
+            Thread.Sleep(100);
+            //string old = state[i]+"\n"; 
 
-            Action empty = () =>
-            lbl.Text = "";
-            this.Invoke(empty);
-            Thread.Sleep(1000);
-            for (int i = 0; i < state.Length; i++)
+            action = () =>
             {
-                Thread.Sleep(100);
-                Action action = () => lbl.Text += state[i];
-                this.Invoke(action);
-            }
-            Thread.Sleep(750);
+                //lbl.SelectionColor = colorSender;
 
-
-            return state;
-        }
-        private void btnMouseEnterLeave(object c, bool enter)
-        {
-            Action action = () =>
-            {
-                Control control = c as Control;
-                if (!enter)
-                    control.BackColor = Color.FromArgb(215, 114, 60);
-                else
-                    control.BackColor = Color.FromArgb(253, 134, 70);
-
+                lbl.SelectedText += $"{state[i]}";
             };
             this.Invoke(action);
         }
-        private void btnStart_MouseEnter(object sender, EventArgs e)
-        {
-            btnMouseEnterLeave(sender, true);
-        }
+        action = () => lbl.SelectedText += $"\n";
+        this.Invoke(action);
 
-        private void btnStart_MouseLeave(object sender, EventArgs e)
-        {
-            btnMouseEnterLeave(sender, false);
 
+        Thread.Sleep(1000);
+
+
+        return state;
+    }
+    public string getState(string state, Label lbl)
+    {
+
+        Action empty = () =>
+        lbl.Text = "";
+        this.Invoke(empty);
+        Thread.Sleep(1000);
+        for (int i = 0; i < state.Length; i++)
+        {
+            Thread.Sleep(100);
+            Action action = () => lbl.Text += state[i];
+            this.Invoke(action);
         }
+        Thread.Sleep(750);
+
+
+        return state;
+    }
+    private void btnMouseEnterLeave(object c, bool enter)
+    {
+        Action action = () =>
+        {
+            Control control = c as Control;
+            if (!enter)
+                control.BackColor = Color.FromArgb(215, 114, 60);
+            else
+                control.BackColor = Color.FromArgb(253, 134, 70);
+
+        };
+        this.Invoke(action);
+    }
+    private void btnStart_MouseEnter(object sender, EventArgs e)
+    {
+        btnMouseEnterLeave(sender, true);
+    }
+
+    private void btnStart_MouseLeave(object sender, EventArgs e)
+    {
+        btnMouseEnterLeave(sender, false);
+
     }
 }
