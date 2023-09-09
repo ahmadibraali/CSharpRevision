@@ -18,33 +18,28 @@ namespace ChatServer
 {
     public partial class frmChatServer : Form
     {
-        StreamReader streamReader;
-        StreamWriter streamWriter;
+        List<Client> clients;
+        List<string> onlineClients;
         public frmChatServer()
         {
             InitializeComponent();
+
+            clients = new List<Client>();
         }
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
 
 
-            if (btnStart.Text == "Start Server")
-            {
-                //flag = false;
-                btnStart.Text = "Stop Server";
-                string starting = await Task.Run(() => getState("Starting ├#########┤", lblCurrentState));
-                string started = await Task.Run(() => getState("Started . (*_*)", lblCurrentState));
 
-                await Task.Run(() => Start(false));
-            }
-            else
-            {
-                // flag = true;
-                await Task.Run(() => Start(true));
-                //flag = false;
+            //flag = false;
+            btnStart.Text = "Stop Server";
+            string starting = await Task.Run(() => getState("Starting ├#########┤", lblCurrentState));
+            string started = await Task.Run(() => getState("Started . (*_*)", lblCurrentState));
 
-            }
+            await Task.Run(Start);
+
+
 
 
 
@@ -123,121 +118,107 @@ namespace ChatServer
             return state;
         }
 
-        private TcpListener initListener()
+
+
+
+
+
+        private async void Start()
         {
             IPAddress ip = IPAddress.Parse("127.0.0.1");
-            TcpListener tcpListener = null;
-            tcpListener = new TcpListener(ip, 49300);
+            TcpListener tcpListener = new TcpListener(ip, 49300);
+            showControls();
+            tcpListener.Start();
+            while (true)
+            {
+                TcpClient tcpClient = await tcpListener.AcceptTcpClientAsync();
 
-            return tcpListener;
+                //string Connected = await Task.Run(() => getState($"Connected With One Client\n-------------><-------------", lblCurrentState));
+
+                Client client = new Client(tcpClient);
+
+
+                client.MsgReceived += Client_MsgReceived;
+                clients.Add(client);
+                //onlineClients.Add(onlineUsers);
+                //ViewOnlineClients(onlineClients);
+            }
         }
 
-        public void showControls()
+        private void ViewOnlineClients(List<string> onlineClients)
         {
-            //label1.Visible = false;
+            foreach (string onlineClient in onlineClients)
+            {
+                comboboxOnline.DisplayMember = "Name";
+                comboboxOnline.Items.Add(onlineClient);
+            }
+        }
+
+        private async void Client_MsgReceived(object? sender, string msg)
+        {
+
+            /*if (msg.StartsWith("#ONLINE#") && msg.EndsWith("#ONLINE#"))
+                 {
+                 var user = msg[8..^8];
+                 onlineClients.Add(user);
+                 Action action = () => 
+                 {
+                     foreach(var user in onlineClients)
+                     {
+                         chkOnlineClients.DisplayMember = "Name";
+                         chkOnlineClients.Items.Add(user);
+                     }
+                 };
+                 this.Invoke(action);
+
+
+             }*/
+
+            string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfMsgContent, true));
+
+
+
+
+        }
+
+        private void showControls()
+        {
             Action action = () =>
             {
-                lblStatus.Visible = true;
-                lblCurrentState.Visible = true;
-                //lblMsgContent.Visible = false;
+                label1.Visible = true;
+                txtMessage.Visible = true;
+                btnSendMsg.Visible = true;
+                rtfMsgContent.Visible = true;
+                lblOnlineClients.Visible = true;
+
             };
             this.Invoke(action);
         }
-
-
-        private async void Start(bool flagRunner)
-        {
-            TcpListener tcpListener = initListener();
-            showControls();
-
-
-
-            if (!flagRunner)
-            {
-                tcpListener.Stop();
-
-                tcpListener.Start();
-                /// to Accept client to connects to the server .
-                TcpClient tcpClient = await tcpListener.AcceptTcpClientAsync();
-
-
-                /// Network Stream as a channel to send or receive using it from/to client to/from server 
-                string Connected = await Task.Run(() => getState($"Connected With One Client\n-------------><-------------", lblCurrentState));
-                NetworkStream networkStream = tcpClient.GetStream();
-                /// (BinaryReader & BinaryWriter)  Same as (StreamReader & StreamWriter)
-
-                //BinaryReader binaryReader = new BinaryReader(networkStream);
-                //BinaryWriter binaryWriter = new BinaryWriter(networkStream);
-                streamReader = new StreamReader(networkStream);
-                streamWriter = new StreamWriter(networkStream);
-
-                while (true)
-                {
-                    string msg = await streamReader.ReadLineAsync();
-                    Action action = () =>
-                    {
-                        label1.Visible = true;
-                        txtMessage.Visible = true;
-                        btnSendMsg.Visible = true;
-                    };
-                    this.Invoke(action);
-                    //Connected = await Task.Run(() => getState($"Client is Sending a Message ", lblCurrentState));
-                    string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfMsgContent, true));
-
-                }
-
-            }
-            else
-            {
-                //tcpListener.Stop();
-                Action action = () =>
-                {
-                    btnStart.Text = "Start Server";
-                    label1.Visible = false;
-                    lblStatus.Visible = true;
-                    lblCurrentState.Text = "Terminated Connection";
-
-                };
-                this.Invoke(action);
-                tcpListener.Stop();
-
-            }
-        }
-
-
-
-
-
-
-
-
-
-        private void btnMouseEnterLeave(object c, bool enter)
-        {
-            Action action = () =>
-        {
-            Control control = c as Control;
-            if (!enter)
-                control.BackColor = Color.FromArgb(215, 114, 60);
-            else
-                control.BackColor = Color.FromArgb(253, 134, 70);
-
-        };
-            this.Invoke(action);
-        }
-
-
-
         private async void btnSendMsg_ClickAsync(object sender, EventArgs e)
         {
-            streamWriter.AutoFlush = true;
+
             string msg = txtMessage.Text;
-            streamWriter.WriteLine(msg);
+            foreach (Client client in clients)
+            {
+                client.SendMsg(msg);
+            }
             string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfMsgContent, false));
 
             txtMessage.Text = "";
         }
+        private void btnMouseEnterLeave(object c, bool enter)
+        {
+            Action action = () =>
+            {
+                Control control = c as Control;
+                if (!enter)
+                    control.BackColor = Color.FromArgb(215, 114, 60);
+                else
+                    control.BackColor = Color.FromArgb(253, 134, 70);
 
+            };
+            this.Invoke(action);
+        }
         private void btnStart_MouseEnter(object sender, EventArgs e)
         {
             btnMouseEnterLeave(sender, true);
