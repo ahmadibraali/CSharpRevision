@@ -18,13 +18,14 @@ namespace ChatServer
 {
     public partial class frmChatServer : Form
     {
-        List<Client> clients;
-        List<string> onlineClients;
+        
+        //List<string> onlineClients;
+        
         public frmChatServer()
         {
             InitializeComponent();
-
-            clients = new List<Client>();
+            
+            
         }
 
         private async void btnStart_Click(object sender, EventArgs e)
@@ -135,15 +136,19 @@ namespace ChatServer
 
                 //string Connected = await Task.Run(() => getState($"Connected With One Client\n-------------><-------------", lblCurrentState));
 
-                Client client = new Client(tcpClient);
+                Session serverSession = new Session(tcpClient);
 
 
-                client.MsgReceived += Client_MsgReceived;
-                clients.Add(client);
+                
+                
+                
+                //clients.Add(client);
                 //onlineClients.Add(onlineUsers);
                 //ViewOnlineClients(onlineClients);
             }
         }
+
+        
 
         private void ViewOnlineClients(List<string> onlineClients)
         {
@@ -188,8 +193,10 @@ namespace ChatServer
                 label1.Visible = true;
                 txtMessage.Visible = true;
                 btnSendMsg.Visible = true;
+                btnSendToAll.Visible = true;
                 rtfMsgContent.Visible = true;
                 lblOnlineClients.Visible = true;
+                comboboxOnline.Visible = true;
 
             };
             this.Invoke(action);
@@ -198,9 +205,9 @@ namespace ChatServer
         {
 
             string msg = txtMessage.Text;
-            foreach (Client client in clients)
+            foreach (User user in Session.OnlineUsers)
             {
-                client.SendMsg(msg);
+                //user.SendMsgToAnthor(msg,);
             }
             string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfMsgContent, false));
 

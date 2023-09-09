@@ -12,6 +12,7 @@ namespace ChatServer
     {
 
         public event EventHandler<string> MsgReceived;
+        
 
         TcpClient tcpClient;
         StreamReader streamReader;
@@ -20,18 +21,27 @@ namespace ChatServer
         
         public static List<User> RegisteredUsers;
         public static List<User> OnlineUsers;
+        public User Server { get; set; }
+
 
 
         public Session(TcpClient _tcpClient)
         {
+            RegisteredUsers = User.Registerdusers;
             this.tcpClient = _tcpClient;
             NetworkStream networkStream = tcpClient.GetStream();
+            Server = new User("Server","123");
             streamReader = new StreamReader(networkStream);
             streamWriter = new StreamWriter(networkStream);
             streamWriter.AutoFlush = true;
-            RegisteredUsers = InitilizeRegisteredUsers();
+            Server.UserIsActive += Server_UserIsActive;
             
 
+        }
+
+        private void Server_UserIsActive(object? sender, User e)
+        {
+            OnlineUsers.Add(e);
         }
 
         private async void ReadMsgs()
@@ -60,10 +70,10 @@ namespace ChatServer
         /// <returns>
         /// Return a List of Users 
         /// </returns>
-        private List<User> InitilizeRegisteredUsers()
+        /*private List<User> InitilizeRegisteredUsers()
         {   List<User> users = new List<User>();
             List<string> Usernames= new List<string>()
-            {
+            {   "Server",
                 "Ali",
                 "Ahmed",
                 "Ola",
@@ -95,8 +105,9 @@ namespace ChatServer
             {
                 users.Add(new User(username, _password));
             }
+
             return users;
 
-        }
+        }*/
     }
 }
