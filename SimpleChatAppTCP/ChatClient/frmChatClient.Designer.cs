@@ -44,6 +44,10 @@
             btnSendToAll = new Label();
             btnDisconnect = new Label();
             chkOnlineUsers = new CheckedListBox();
+            lblNoActiveUsers = new Label();
+            lblLoginState = new Label();
+            label4 = new Label();
+            rtfStateMsg = new RichTextBox();
             SuspendLayout();
             // 
             // btnConnect
@@ -107,11 +111,11 @@
             // 
             lblClientState.AutoSize = true;
             lblClientState.BackColor = Color.Transparent;
-            lblClientState.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            lblClientState.Font = new Font("FiraCode Nerd Font Propo", 9F, FontStyle.Bold, GraphicsUnit.Point);
             lblClientState.ForeColor = Color.FromArgb(215, 114, 60);
-            lblClientState.Location = new Point(293, 65);
+            lblClientState.Location = new Point(253, 65);
             lblClientState.Name = "lblClientState";
-            lblClientState.Size = new Size(0, 24);
+            lblClientState.Size = new Size(0, 19);
             lblClientState.TabIndex = 5;
             // 
             // lblReceived
@@ -183,7 +187,6 @@
             label2.Size = new Size(130, 24);
             label2.TabIndex = 12;
             label2.Text = "UserName :";
-            label2.Visible = false;
             // 
             // label3
             // 
@@ -195,7 +198,6 @@
             label3.Size = new Size(130, 24);
             label3.TabIndex = 13;
             label3.Text = "Password :";
-            label3.Visible = false;
             // 
             // lblOnlineClients
             // 
@@ -223,6 +225,9 @@
             btnSendToAll.TabIndex = 15;
             btnSendToAll.Text = "Send To All";
             btnSendToAll.Visible = false;
+            btnSendToAll.Click += btnSendToAll_Click;
+            btnSendToAll.MouseEnter += btnStart_MouseEnter;
+            btnSendToAll.MouseLeave += btnStart_MouseLeave;
             // 
             // btnDisconnect
             // 
@@ -251,6 +256,57 @@
             chkOnlineUsers.TabIndex = 18;
             chkOnlineUsers.Visible = false;
             // 
+            // lblNoActiveUsers
+            // 
+            lblNoActiveUsers.BackColor = Color.Transparent;
+            lblNoActiveUsers.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            lblNoActiveUsers.ForeColor = Color.FromArgb(215, 114, 60);
+            lblNoActiveUsers.Location = new Point(724, 296);
+            lblNoActiveUsers.Name = "lblNoActiveUsers";
+            lblNoActiveUsers.Size = new Size(215, 109);
+            lblNoActiveUsers.TabIndex = 22;
+            lblNoActiveUsers.Text = "No Active Users";
+            lblNoActiveUsers.TextAlign = ContentAlignment.MiddleCenter;
+            lblNoActiveUsers.Visible = false;
+            // 
+            // lblLoginState
+            // 
+            lblLoginState.BackColor = Color.Transparent;
+            lblLoginState.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            lblLoginState.ForeColor = Color.FromArgb(215, 114, 60);
+            lblLoginState.Location = new Point(717, 92);
+            lblLoginState.Name = "lblLoginState";
+            lblLoginState.Size = new Size(211, 22);
+            lblLoginState.TabIndex = 23;
+            lblLoginState.Text = "Login State";
+            lblLoginState.TextAlign = ContentAlignment.MiddleCenter;
+            lblLoginState.Visible = false;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.BackColor = Color.FromArgb(42, 61, 68);
+            label4.BorderStyle = BorderStyle.Fixed3D;
+            label4.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            label4.Location = new Point(724, 527);
+            label4.Name = "label4";
+            label4.Size = new Size(204, 26);
+            label4.TabIndex = 24;
+            label4.Text = "State Messages :";
+            label4.Visible = false;
+            // 
+            // rtfStateMsg
+            // 
+            rtfStateMsg.Font = new Font("FiraCode Nerd Font Propo", 7.2F, FontStyle.Bold, GraphicsUnit.Point);
+            rtfStateMsg.Location = new Point(704, 576);
+            rtfStateMsg.Margin = new Padding(2);
+            rtfStateMsg.Name = "rtfStateMsg";
+            rtfStateMsg.ReadOnly = true;
+            rtfStateMsg.Size = new Size(249, 176);
+            rtfStateMsg.TabIndex = 25;
+            rtfStateMsg.Text = "";
+            rtfStateMsg.Visible = false;
+            // 
             // frmChatClient
             // 
             AutoScaleDimensions = new SizeF(11F, 23F);
@@ -259,6 +315,10 @@
             BackgroundImage = Properties.Resources.New_Project;
             BackgroundImageLayout = ImageLayout.Stretch;
             ClientSize = new Size(991, 799);
+            Controls.Add(rtfStateMsg);
+            Controls.Add(label4);
+            Controls.Add(lblLoginState);
+            Controls.Add(lblNoActiveUsers);
             Controls.Add(chkOnlineUsers);
             Controls.Add(btnDisconnect);
             Controls.Add(btnSendToAll);
@@ -305,5 +365,9 @@
         private Label btnSendToAll;
         private Label btnDisconnect;
         private CheckedListBox chkOnlineUsers;
+        private Label lblNoActiveUsers;
+        private Label lblLoginState;
+        private Label label4;
+        private RichTextBox rtfStateMsg;
     }
 }

@@ -38,7 +38,10 @@
             rtfMsgContent = new RichTextBox();
             lblOnlineClients = new Label();
             btnSendToAll = new Label();
-            comboboxOnline = new ComboBox();
+            lblNoActiveUsers = new Label();
+            chkOnlineUsers = new CheckedListBox();
+            rtfStateMsg = new RichTextBox();
+            lblStateMsgs = new Label();
             SuspendLayout();
             // 
             // lblStatus
@@ -163,7 +166,6 @@
             lblOnlineClients.Size = new Size(204, 26);
             lblOnlineClients.TabIndex = 17;
             lblOnlineClients.Text = "Online Clients :";
-            lblOnlineClients.Visible = false;
             // 
             // btnSendToAll
             // 
@@ -178,16 +180,57 @@
             btnSendToAll.TabIndex = 19;
             btnSendToAll.Text = "Send To All";
             btnSendToAll.Visible = false;
+            btnSendToAll.Click += btnSendToAll_Click;
             // 
-            // comboboxOnline
+            // lblNoActiveUsers
             // 
-            comboboxOnline.DropDownStyle = ComboBoxStyle.Simple;
-            comboboxOnline.FormattingEnabled = true;
-            comboboxOnline.Location = new Point(724, 243);
-            comboboxOnline.Name = "comboboxOnline";
-            comboboxOnline.Size = new Size(208, 288);
-            comboboxOnline.TabIndex = 20;
-            comboboxOnline.Visible = false;
+            lblNoActiveUsers.BackColor = Color.Transparent;
+            lblNoActiveUsers.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            lblNoActiveUsers.ForeColor = Color.FromArgb(215, 114, 60);
+            lblNoActiveUsers.Location = new Point(724, 296);
+            lblNoActiveUsers.Name = "lblNoActiveUsers";
+            lblNoActiveUsers.Size = new Size(215, 109);
+            lblNoActiveUsers.TabIndex = 21;
+            lblNoActiveUsers.Text = "No Active Users";
+            lblNoActiveUsers.TextAlign = ContentAlignment.MiddleCenter;
+            lblNoActiveUsers.Visible = false;
+            // 
+            // chkOnlineUsers
+            // 
+            chkOnlineUsers.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            chkOnlineUsers.ForeColor = Color.Green;
+            chkOnlineUsers.FormattingEnabled = true;
+            chkOnlineUsers.Location = new Point(724, 245);
+            chkOnlineUsers.Name = "chkOnlineUsers";
+            chkOnlineUsers.Size = new Size(215, 254);
+            chkOnlineUsers.TabIndex = 22;
+            chkOnlineUsers.Visible = false;
+            chkOnlineUsers.SelectedValueChanged += chkOnlineUsers_SelectedValueChanged;
+            // 
+            // rtfStateMsg
+            // 
+            rtfStateMsg.Font = new Font("FiraCode Nerd Font Propo", 7.2F, FontStyle.Bold, GraphicsUnit.Point);
+            rtfStateMsg.Location = new Point(704, 576);
+            rtfStateMsg.Margin = new Padding(2);
+            rtfStateMsg.Name = "rtfStateMsg";
+            rtfStateMsg.ReadOnly = true;
+            rtfStateMsg.Size = new Size(249, 176);
+            rtfStateMsg.TabIndex = 27;
+            rtfStateMsg.Text = "";
+            rtfStateMsg.Visible = false;
+            // 
+            // lblStateMsgs
+            // 
+            lblStateMsgs.AutoSize = true;
+            lblStateMsgs.BackColor = Color.FromArgb(42, 61, 68);
+            lblStateMsgs.BorderStyle = BorderStyle.Fixed3D;
+            lblStateMsgs.Font = new Font("FiraCode Nerd Font Propo", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            lblStateMsgs.Location = new Point(724, 527);
+            lblStateMsgs.Name = "lblStateMsgs";
+            lblStateMsgs.Size = new Size(204, 26);
+            lblStateMsgs.TabIndex = 26;
+            lblStateMsgs.Text = "State Messages :";
+            lblStateMsgs.Visible = false;
             // 
             // frmChatServer
             // 
@@ -196,7 +239,10 @@
             BackgroundImage = Properties.Resources.New_Project;
             BackgroundImageLayout = ImageLayout.Stretch;
             ClientSize = new Size(991, 799);
-            Controls.Add(comboboxOnline);
+            Controls.Add(rtfStateMsg);
+            Controls.Add(lblStateMsgs);
+            Controls.Add(lblNoActiveUsers);
+            Controls.Add(chkOnlineUsers);
             Controls.Add(btnSendToAll);
             Controls.Add(lblOnlineClients);
             Controls.Add(rtfMsgContent);
@@ -228,6 +274,9 @@
         private RichTextBox rtfMsgContent;
         private Label lblOnlineClients;
         private Label btnSendToAll;
-        private ComboBox comboboxOnline;
+        private Label lblNoActiveUsers;
+        private CheckedListBox chkOnlineUsers;
+        private RichTextBox rtfStateMsg;
+        private Label lblStateMsgs;
     }
 }
