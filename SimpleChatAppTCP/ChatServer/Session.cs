@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -8,65 +9,13 @@ using System.Threading.Tasks;
 
 namespace ChatServer
 {
-    internal class Session
+    public class Session
     {
-
-        public event EventHandler<string> MsgReceived;
-
-        TcpClient tcpClient;
-        StreamReader streamReader;
-        StreamWriter streamWriter;
-        List<Message> SessionRecievedMsgs;
-        
-        public static List<User> RegisteredUsers;
-        public static List<User> OnlineUsers;
-
-
-        public Session(TcpClient _tcpClient)
-        {
-            this.tcpClient = _tcpClient;
-            NetworkStream networkStream = tcpClient.GetStream();
-            streamReader = new StreamReader(networkStream);
-            streamWriter = new StreamWriter(networkStream);
-            streamWriter.AutoFlush = true;
-            RegisteredUsers = InitilizeRegisteredUsers();
-            
-
-        }
-
-        private async void ReadMsgs()
-        {
-            while (true)
-            {
-                string _packet = await streamReader.ReadLineAsync();
-                Message ReceivedMsg = new Message(_packet);
-                SessionRecievedMsgs.Add(new Message(_packet));
-
-
-
-
-                if (MsgReceived != null)
-                    MsgReceived(this,ReceivedMsg.CoreMsg );
-
-            }
-        }
-      
-
-        /// <summary>
-        /// ParameterLess Function That Return All Registered Users In The Server 
-        /// As a Database for Authentication and check Credinitial in Very Simple Way
-        /// 
-        /// </summary>
-        /// <returns>
-        /// Return a List of Users 
-        /// </returns>
-        private List<User> InitilizeRegisteredUsers()
-        {   List<User> users = new List<User>();
-            List<string> Usernames= new List<string>()
-            {
+        public static List<string> RegisterdUsers = new List<string>() {
+                "Server",
                 "Ali",
-                "Ahmed",
                 "Ola",
+                "Ahmed",
                 "Nour",
                 "Mike",
                 "Salma",
@@ -74,10 +23,10 @@ namespace ChatServer
                 "Walid",
                 "Mayar",
                 "Hani",
-                "Hamdy",
+               "Hamdy",
                 "Mahmoud",
                 "Mourad",
-                "Yasmin",
+               "Yasmin",
                 "Safa",
                 "Nourhan",
                 "Nouran",
@@ -90,13 +39,81 @@ namespace ChatServer
                 "Mohamed",
                 "Tarek"
             };
-            string _password = "123";
-            foreach (var username in Usernames)
-            {
-                users.Add(new User(username, _password));
-            }
-            return users;
+        public static bool IsServer;
+        public event EventHandler<Message> MsgReceived;
+        
 
+        TcpClient tcpClient;
+        StreamReader streamReader;
+        StreamWriter streamWriter;
+        public static List<Message> SessionRecievedMsgs=new List<Message>();
+
+
+        
+        public static List<string> OfflineUsers = new List<string>();
+
+        public static List<string> OnlineUsers = new List<string>();
+
+        public string UserName { get; set; }
+        
+
+
+
+        public Session(TcpClient _tcpClient)
+        {
+             
+            
+            //this.UserName = _userName; 
+            this.tcpClient = _tcpClient;
+            NetworkStream networkStream = tcpClient.GetStream();
+            streamReader = new StreamReader(networkStream);
+            streamWriter = new StreamWriter(networkStream);
+            streamWriter.AutoFlush = true;
+
+           
+
+            ReadMsgs();
         }
+        public Session(string UserName)
+        {
+            this.UserName = UserName;
+        }
+
+
+
+        
+       
+
+       
+        private async void ReadMsgs()
+        {
+            while (true)
+            {
+                string _packet = await streamReader.ReadLineAsync();
+                Message ReceivedMsg = new Message(_packet);
+                SessionRecievedMsgs.Add(ReceivedMsg);
+                
+                
+
+
+
+                if (MsgReceived != null)
+                    MsgReceived(this,ReceivedMsg);
+
+            }
+        }
+
+        public void SendMsg(Message _message)
+        {
+            
+            streamWriter.WriteLine(_message.Packet);
+        }
+
+        
+        
+
+
+
+    
     }
 }

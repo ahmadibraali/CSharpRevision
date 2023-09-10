@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ChatServer
@@ -19,92 +20,69 @@ namespace ChatServer
         Unknown = 128
 
     }
-    internal class Message
+    public class Message
     {
         private string msg;
         public string Packet { get; set; }
-        public User From { get; set; }
-        public User To { get; set; }
-        private MsgsTypes msgType;
+        public string To { get; set; }
+        public string From { get; set; }
+        
+        public MsgsTypes msgType { get; set; }
         public string CoreMsg { set { msg = value; } get { return msg; } }
-        public Message(string _Packet) {
-            this.Packet = _Packet;
-            this.msgType = CheckReceivingMsgType(this);
-            this.msg = GetMessage(Packet, msgType);
-             }
-        public Message(string _msg, MsgsTypes _msgType)
-        {
-            this.msg = _msg;
-            Packet = GenerateSendindPacket(_msg, _msgType);
-           
-            msgType = _msgType;
-        }
+        
 
-        /// <summary>
-        /// Function To Retriecve Core Or Pure Msg From Packet 
-        /// <see>
-        /// <example>
-        /// Message Has msg (Core Or Pure Msg From) and Packet (Segment + msg +Segment )
-        /// </example>
-        /// 
-        /// </see>
-        /// </summary>
-        /// <param name="packet">Packet Which is Ready Send Or Receive</param>
-        /// <param name="msgType">Message Type Which Represent the Way of Communications and use Defined Segemnt for Each Packet</param>
-        /// <returns>
-        /// <summary>
-        /// return string of The Core or Pure Msg form after Removing Segments from Packet
-        /// </summary>
-        /// </returns>
-        private string? GetMessage(string packet, MsgsTypes msgType)
+       
+
+        public Message(string _msg, MsgsTypes _msgType,string _from,string to)
         {
             
-                switch (msgType)
-                {
-                    case MsgsTypes.Credinitials:
-                        return RemoveSegments(packet,"##LOGIN##");
-                        break;
-                    case MsgsTypes.InValidCredinitials:
-                        return RemoveSegments(packet, "##INVALIDCREDINITIALS##");
-                        break;
-                
-                    case MsgsTypes.Normal:
-                    default:
-                        return RemoveSegments(packet, "##NORMAL##");
-                        break;
-                    case MsgsTypes.BroadCasting:
-                        return RemoveSegments(packet, "##BROADCASTING##");
-                        break;
-                    case MsgsTypes.Authenticated:
-                        return RemoveSegments(packet,"##AUTHENTICATED##");
-                        break;
-                    case MsgsTypes.OnlineUser:
-                        return RemoveSegments(packet,"##ONLINE##");
-                        break;
-                    case MsgsTypes.Error:
-                        return RemoveSegments(packet, "##ERROR##");
-                        break;
-                    case MsgsTypes.Unknown:
-                        return RemoveSegments(packet,"##UNKNOWN##");
-                        break;
-                    
-                 }
-
-
+            Packet = GenerateSendingPacket(_msg, _msgType,_from,to);
+            this.msgType = _msgType;
+            this.To= to;
+            this.From = _from;
+            this.CoreMsg = _msg;
+            
         }
-        /// <summary>
-        /// Removing The Extra Information From The Packet 
-        /// </summary>
-        /// <param name="packet">Packet (Segment + Message + Segment)</param>
-        /// <param name="seg">Segment to be removed </param>
-        /// <returns>returns string for the Purest Form Of Message </returns>
-        private string? RemoveSegments(string packet, string seg)
+        public Message(string _Packet)
         {
-            string result = packet.Remove(0, seg.Length);
-            result= result.Remove(result.Length-seg.Length,seg.Length);
-            return result;
+            this.Packet = _Packet;
+            string[] messageMembers = Regex.Split(_Packet, "##");
+            this.From = messageMembers[0];
+            this.To = messageMembers[1];
+            this.msgType = GetMsgType(messageMembers[2]);
+            this.CoreMsg = messageMembers[3];
+
+            
+        }
+        private MsgsTypes GetMsgType(string type)
+        {
+            switch (type)
+            {
+                case "LOGIN":
+                    return MsgsTypes.Credinitials;
+                case "INVALIDCREDINITIALS":
+                    return MsgsTypes.InValidCredinitials;
+                case "NORMAL":
+                    return MsgsTypes.Normal;
+                case "BROADCASTING":
+                    return MsgsTypes.BroadCasting;
+                case "AUTHENTICATED":
+                    return MsgsTypes.Authenticated;
+                case "ONLINE":
+                    return MsgsTypes.OnlineUser;
+                case "ERROR":
+                    return MsgsTypes.Error;
+                case "UNKNOWN":
+                default:
+                    return MsgsTypes.Unknown;
+
+
+            }
         }
 
+
+
+        
         
         /// <summary>
         /// Generating Packet Depending Of Msg Type .
@@ -112,18 +90,12 @@ namespace ChatServer
         /// <param name="msg">take Simple text or The Pure Version OF Message</param>
         /// <param name="msgType">Take The Tyepe Of The Message </param>
         /// <returns>Generates A String oF The Packet That We Use To Send In Network Stream Path </returns>
-        private string? GenerateSendindPacket(string msg, MsgsTypes msgType)
+        private string? GenerateSendingPacket(string msg, MsgsTypes msgType,string from,string to)
         {
             string? value=MsgSendingProtcol(msgType);
             string result;
-            if(msg is null)
-                return null;
-            else
-            {
-                result = $"{value}{msg}{value}";
-                return result;
-            }
-            
+            result = $"{from}##{to}##{value}##{msg}";
+            return result; 
         }
         /// <summary>
         /// Message Sending Protocol Function 
@@ -144,70 +116,31 @@ namespace ChatServer
             switch(msgType)
             {
                 case MsgsTypes.Credinitials:
-                    return "##LOGIN##";
-                    break;
+                    return "LOGIN";
                 case MsgsTypes.InValidCredinitials:
-                    return "##INVALIDCREDINITIALS##";
-                    break;
+                    return "INVALIDCREDINITIALS";
                 case MsgsTypes.Normal:
                 default:
-                    return "##NORMAL##";
-                    break;
+                    return "NORMAL";
                 case MsgsTypes.BroadCasting:
-                    return "##BROADCASTING##";
-                    break;
+                    return "BROADCASTING";
                 case MsgsTypes.Authenticated:
-                    return "##AUTHENTICATED##";
-                    break;
+                    return "AUTHENTICATED";
                 case MsgsTypes.OnlineUser:
-                    return "##ONLINE##";
-                    break;
+                    return "ONLINE";
                 case MsgsTypes.Error:
-                    return "##ERROR##";
-                    break;
+                    return "ERROR";
                 case MsgsTypes.Unknown:
-                    return "##UNKNOWN##";
-                    break;
-
+                    return "UNKNOWN";
             }
         }
-        /// <summary>
-        /// Message Receiving Protocol Function 
-        /// The Way Of Communication Algorithm In Receiveing Messages
-        /// </summary>
-        /// <param name="Msg">
-        /// takes Receiving Msg and check The Receiving Packet 
-        /// Using the agreement Protocol In the Way of Communication
-        /// </param>
-        /// <returns>
-        /// Returns Msg Type and after Knowning The The We Can Choose The Way Of Viewing This Msg
-        /// </returns>
-        private MsgsTypes CheckReceivingMsgType(Message Msg)
-        {
-            if (Msg.Packet.StartsWith("##LOGIN##") && Msg.Packet.EndsWith("##LOGIN##"))
-                return MsgsTypes.Credinitials;
-            else if (Msg.Packet.StartsWith("##ONLINE##") && Msg.Packet.EndsWith("##ONLINE##"))
-                return MsgsTypes.OnlineUser;
-            else if (Msg.Packet.StartsWith("##NORMAL##") && Msg.Packet.EndsWith("##NORMAL##"))
-                return MsgsTypes.Normal;
-            else if (Msg.Packet.StartsWith("##BROADCASTING##") && Msg.Packet.EndsWith("##BROADCASTING##"))
-                return MsgsTypes.BroadCasting;
-            else if (Msg.Packet.StartsWith("##AUTHENTICATED##") && Msg.Packet.EndsWith(("##AUTHENTICATED##")))
-                return MsgsTypes.Authenticated;
-            else if (Msg.Packet.StartsWith("##INVALIDCREDINITIALS##") && Msg.Packet.EndsWith("##INVALIDCREDINITIALS##"))
-                return MsgsTypes.InValidCredinitials;
-            else if (Msg.Packet.StartsWith("##ERROR##") && Msg.Packet.EndsWith("##ERROR##"))
-                return MsgsTypes.Error;
-            else
-                return MsgsTypes.Unknown;
-
-
-        }
+        
+        
         /// <summary>
         /// Function To Retreive Message Data And Informations About Sender and Receiver
         /// </summary>
         /// <returns>return string Of Log About Message</returns>
-        public override string ToString()=> $"├ Sender ┤> {this.From.UserName.ToUpper()}\n├ Receiver ┤> {this.To.UserName.ToUpper()}\n├ Message ┤>\"{this.msg}\"\n├ At ┤>\"{DateTime.Now}\"";
+        public override string ToString()=> $"├ Sender ┤> {From.ToUpper()}\n├ Receiver ┤> {To.ToUpper()}\n├ Message ┤>\"{this.msg}\"\n├ At ┤>\"{DateTime.Now}\"";
         
     }
 }

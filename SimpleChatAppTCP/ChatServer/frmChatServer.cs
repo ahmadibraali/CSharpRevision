@@ -12,92 +12,92 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
 using System.Windows.Forms;
+using static System.Collections.Specialized.BitVector32;
 using static System.Windows.Forms.AxHost;
 
 namespace ChatServer
 {
     public partial class frmChatServer : Form
     {
-        List<Client> clients;
-        List<string> onlineClients;
+
+        public static List<Session> ConnectedUsers;
+
+
+
         public frmChatServer()
         {
             InitializeComponent();
+            InitiateOffllineUsers();
+            ViewOnlineClients(Session.OnlineUsers,chkOnlineUsers);
+            ConnectedUsers = new List<Session>();
 
-            clients = new List<Client>();
+
         }
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
-
-
-
             //flag = false;
-            btnStart.Text = "Stop Server";
-            string starting = await Task.Run(() => getState("Starting ├#########┤", lblCurrentState));
-            string started = await Task.Run(() => getState("Started . (*_*)", lblCurrentState));
+            if (!Session.IsServer)
+            {
+                //btnStart.Text = "Stop Server";
+                btnStart.Enabled = false;
+                string starting = await Task.Run(() => getState("Starting ├#########┤", lblCurrentState));
+                starting = await Task.Run(() => getState("Started . (*_*)", lblCurrentState));
+                starting = await Task.Run(() => getState("Server Is Running (*_*)", lblCurrentState));
 
-            await Task.Run(Start);
+                await Task.Run(() => Start("Server"));
+            }
 
 
 
 
 
         }
-        public string getEnhancedState(string state, RichTextBox lbl, bool to)
+        public void getEnhancedState(Message _message, RichTextBox rtf)
         {
-
             Color colorSender = Color.FromArgb(253, 134, 70);
             Color colorReciver = Color.FromArgb(42, 61, 68);
+            Color colorBroadCast = Color.FromArgb(240, 120, 44);
             Action action;
+            bool checkBroadCast = (_message.msgType == MsgsTypes.BroadCasting) ? true : false;
+            string _sender;
+            if (checkBroadCast)
 
-
-            if (to)
-            {
-
-                action = () =>
-                {
-                    lbl.SelectionColor = colorSender;
-                    lbl.SelectedText = Environment.NewLine + $"├Client :-->";
-                };
-                this.Invoke(action);
-                goto stage;
-
-            }
+                _sender = $"Broadcasting Message from {_message.From}";
             else
-            {
-                action = () =>
-                {
-                    //lbl.TextAlign=ContentAlignment.TopRight;
-                    lbl.SelectionColor = colorReciver;
-                    lbl.SelectedText = Environment.NewLine + $"├Server :--> ";
-                };
-                this.Invoke(action);
+                _sender = _message.From;
 
-            }
-        stage:
+            action = () =>
+            {
+                if (_sender.ToLower() == "Server".ToLower())
+                    rtf.SelectionColor = colorSender;
+                else if(checkBroadCast)
+                    rtf.SelectionColor = colorBroadCast;
+                else
+                    rtf.SelectionColor = colorReciver;
+                rtf.SelectedText = Environment.NewLine + $"├{_sender}>>";
+            };
+            this.Invoke(action);
             Thread.Sleep(750);
-            for (int i = 0; i < state.Length; i++)
+            for (int i = 0; i < _message.CoreMsg.Length; i++)
             {
                 Thread.Sleep(100);
-                //string old = state[i]+"\n"; 
 
                 action = () =>
                 {
-                    //lbl.SelectionColor = colorSender;
 
-                    lbl.SelectedText += $"{state[i]}";
+                    rtf.SelectedText += $"{_message.CoreMsg[i]}";
                 };
                 this.Invoke(action);
             }
-            action = () => lbl.SelectedText += $"\n";
+            action = () => rtf.SelectedText += $"\n";
             this.Invoke(action);
 
 
-            Thread.Sleep(1000);
+            Thread.Sleep(610);
 
 
-            return state;
+
         }
         public string getState(string state, Label lbl)
         {
@@ -123,63 +123,75 @@ namespace ChatServer
 
 
 
-        private async void Start()
+        private async void Start(string userName)
         {
             IPAddress ip = IPAddress.Parse("127.0.0.1");
             TcpListener tcpListener = new TcpListener(ip, 49300);
             showControls();
             tcpListener.Start();
+            Session.IsServer = true;
             while (true)
             {
                 TcpClient tcpClient = await tcpListener.AcceptTcpClientAsync();
 
-                //string Connected = await Task.Run(() => getState($"Connected With One Client\n-------------><-------------", lblCurrentState));
+                Session newSession = new Session(tcpClient);
 
-                Client client = new Client(tcpClient);
-
-
-                client.MsgReceived += Client_MsgReceived;
-                clients.Add(client);
-                //onlineClients.Add(onlineUsers);
-                //ViewOnlineClients(onlineClients);
+                newSession.MsgReceived += NewSession_MsgReceived;
+                ConnectedUsers.Add(newSession);
             }
         }
 
-        private void ViewOnlineClients(List<string> onlineClients)
+        private async void NewSession_MsgReceived(object? sender, Message _message)
         {
-            foreach (string onlineClient in onlineClients)
+
+            MsgsTypes type = _message.msgType;
+            switch (type)
             {
-                comboboxOnline.DisplayMember = "Name";
-                comboboxOnline.Items.Add(onlineClient);
+                case MsgsTypes.Normal:
+                    await Task.Run(() => getEnhancedState(_message, rtfMsgContent));
+                    break;
+                case MsgsTypes.BroadCasting:
+                    await Task.Run(() => getEnhancedState(_message, rtfMsgContent));
+                    SendToMultipleUsers(_message, ConnectedUsers);
+                    break;
+
+                case MsgsTypes.Authenticated:
+                    await Task.Run(() => getEnhancedState(_message, rtfStateMsg));
+                    string online = Session.OfflineUsers.Find(x => x.ToLower() == _message.From.ToLower());
+                    Session.OfflineUsers.Remove(online);
+                    Session.OnlineUsers.Add(online);
+                    //Session online = new Session(_message.From);
+                    //OnlineUsers.Add(online);
+                    ViewOnlineClients(Session.OnlineUsers, chkOnlineUsers);
+                    break;
+                case MsgsTypes.Credinitials:
+                case MsgsTypes.Error:
+                case MsgsTypes.InValidCredinitials:
+                case MsgsTypes.OnlineUser:
+                case MsgsTypes.Unknown:
+                default:
+                    await Task.Run(() => getEnhancedState(_message, rtfStateMsg));
+                    break;
+
             }
         }
 
-        private async void Client_MsgReceived(object? sender, string msg)
+
+
+        public static void ViewOnlineClients(List<string> OnlineUsers,CheckedListBox chklist)
         {
-
-            /*if (msg.StartsWith("#ONLINE#") && msg.EndsWith("#ONLINE#"))
-                 {
-                 var user = msg[8..^8];
-                 onlineClients.Add(user);
-                 Action action = () => 
-                 {
-                     foreach(var user in onlineClients)
-                     {
-                         chkOnlineClients.DisplayMember = "Name";
-                         chkOnlineClients.Items.Add(user);
-                     }
-                 };
-                 this.Invoke(action);
-
-
-             }*/
-
-            string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfMsgContent, true));
-
-
-
+            chklist.Visible = false;
+            Action action;
+            chklist.Items.Clear();
+            foreach (string onlineUser in OnlineUsers)
+            {
+                chklist.DisplayMember = "UserName";
+                chklist.Items.Add(onlineUser);
+            }
 
         }
+
+
 
         private void showControls()
         {
@@ -188,23 +200,59 @@ namespace ChatServer
                 label1.Visible = true;
                 txtMessage.Visible = true;
                 btnSendMsg.Visible = true;
+                btnSendToAll.Visible = true;
                 rtfMsgContent.Visible = true;
-                lblOnlineClients.Visible = true;
+                lblStateMsgs.Visible = true;
+                rtfStateMsg.Visible = true;
+
+                checkOnlineUsers();
+
 
             };
             this.Invoke(action);
         }
+
+        private void checkOnlineUsers()
+        {
+            lblOnlineClients.Visible = true;
+            if (Session.OnlineUsers.Count == 0)
+            {
+
+                chkOnlineUsers.Visible = false;
+                lblNoActiveUsers.Visible = true;
+            }
+            else
+            {
+                lblNoActiveUsers.Visible = false;
+                chkOnlineUsers.Visible = true;
+            }
+        }
+
         private async void btnSendMsg_ClickAsync(object sender, EventArgs e)
         {
 
             string msg = txtMessage.Text;
-            foreach (Client client in clients)
-            {
-                client.SendMsg(msg);
-            }
-            string content = await Task.Run(() => getEnhancedState($"\"{msg}\"", rtfMsgContent, false));
+            Message _message = new Message(msg, MsgsTypes.Normal, "Server", "ALL");
+            SendToMultipleUsers(_message, ConnectedUsers);
+
+
+            await Task.Run(() => getEnhancedState(_message, rtfMsgContent));
+
 
             txtMessage.Text = "";
+        }
+        private void btnSendToAll_Click(object sender, EventArgs e)
+        {
+            Message msg = new Message(txtMessage.Text, MsgsTypes.Normal, "Server", "ALL");
+            SendToMultipleUsers(msg, ConnectedUsers);
+
+        }
+        private void SendToMultipleUsers(Message _message, List<Session> Sessions)
+        {
+            foreach (Session session in Sessions)
+            {
+                session.SendMsg(_message);
+            }
         }
         private void btnMouseEnterLeave(object c, bool enter)
         {
@@ -230,7 +278,27 @@ namespace ChatServer
 
         }
 
-
+        private void chkOnlineUsers_SelectedValueChanged(object sender, EventArgs e)
+        {
+            ViewOnlineClients(Session.OnlineUsers, chkOnlineUsers);
+        }
+        public static List<string> GetUsers(List<string> CopyFrom)
+        {
+            List<string> users = new List<string>();
+            foreach (string user in CopyFrom)
+            {
+                users.Add(user);
+            }
+            return users;
+        }
+        public static void InitiateOffllineUsers()
+        {
+            if (Session.OfflineUsers.Count <= 0)
+            {
+                Session.OfflineUsers = GetUsers(Session.RegisterdUsers);
+            }
+            return;
+        }
     }
 
 }
