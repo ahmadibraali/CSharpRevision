@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using System.Configuration;
 using ZMoviesReview.Data;
 
 namespace ZMoviesReview
@@ -10,7 +12,8 @@ namespace ZMoviesReview
 
             // Add services to the container.
 
-            builder.Services.AddDbContext<AppDbContext>();
+           //builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionString")));
+           builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("QA_Context")));
            builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
