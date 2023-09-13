@@ -37,6 +37,11 @@ namespace ZMoviesReview
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
+            #region Seed Data
+            AppDbInitializer.Seed(app);
+           
+            #endregion
+
             app.Run();
         }
     }
