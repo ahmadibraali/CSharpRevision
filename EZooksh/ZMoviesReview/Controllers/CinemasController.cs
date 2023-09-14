@@ -4,18 +4,18 @@ using ZMoviesReview.Data;
 
 namespace ZMoviesReview.Controllers
 {
-    public class ProducersController : Controller
+    public class CinemasController : Controller
     {
         private readonly AppDbContext _context;
 
-        public ProducersController(AppDbContext context)
+        public CinemasController(AppDbContext context)
         {
             _context = context;
         }
         public async Task<IActionResult> Index()
         {
-            // Injection Of Producers data
-            var allProducers = await _context.Producers.ToListAsync();
+            // Injection Of Cinemas data
+            var allCinemas = await _context.Cinemas.ToListAsync();
 
             return View();
         }
