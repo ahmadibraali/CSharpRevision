@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ZMoviesReview.Data;
 
 namespace ZMoviesReview.Controllers
@@ -11,10 +12,10 @@ namespace ZMoviesReview.Controllers
         {
             _context = context;
         }
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             // Injection Of Producers data
-            var data = _context.Producers.ToList();
+            var allProducers = await _context.Producers.ToListAsync();
 
             return View();
         }
