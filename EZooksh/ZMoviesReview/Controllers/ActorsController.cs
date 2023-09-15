@@ -16,7 +16,7 @@ namespace ZMoviesReview.Controllers
             // Injection Of Actors data
             var data  = _context.Actors.ToList();
 
-            return View();
+            return View(data);
         }
     }
 }
