@@ -17,7 +17,7 @@ namespace ZMoviesReview.Controllers
             // Injection Of Producers data
             var allProducers = await _context.Producers.ToListAsync();
 
-            return View();
+            return View(allProducers);
         }
     }
 }
